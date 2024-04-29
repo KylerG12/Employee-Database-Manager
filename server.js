@@ -77,7 +77,12 @@ function viewAllDep() {
 
 function viewAllRole() {
   db.promise()
-    .query(`SELECT role.id, role.title, department.name AS department, role.salary FROM role LEFT JOIN department on role.department_id = department.id`)
+    .query(
+      `SELECT role.id, role.title, department.name AS department, role.salary 
+    FROM role 
+    LEFT JOIN department on role.department_id = department.id 
+    ORDER BY department`
+    )
     .then(([rows, fields]) => {
       console.table(rows);
     })
@@ -87,7 +92,13 @@ function viewAllRole() {
 function viewAllEmp() {
   return db
     .promise()
-    .query(`SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, employee.manager_id AS manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id;`
+    .query(
+      `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, e2.first_name AS manager 
+    FROM employee 
+    LEFT JOIN role on employee.role_id = role.id 
+    LEFT JOIN department on role.department_id = department.id
+    LEFT JOIN employee e2 on employee.manager_id = e2.id
+    ORDER BY title;`
     )
     .then(([rows, fields]) => {
       console.table(rows);
@@ -118,71 +129,101 @@ function addRole() {
     .then(([rows, fields]) => {
       let deps = rows;
       let depParams = deps.map(({ id, name }) => ({
-        id: id,
+        value: id,
         name: name,
       }));
+      console.log(depParams);
 
-      inq.prompt([
-        {
-          type: "input",
-          message: "What is the name of the new role?",
-          name: "role",
-        },
-        {
-          type: "input",
-          message: "What is the salary of the new Role?",
-          name: "salary",
-        },
-        {
-          type: "list",
-          message: "Which department does the role belong to?",
-          name: "dep",
-          choices: depParams
-        }
-      ]).then (newRole => {
-        console.log(newRole)
-        return db.promise().query(`INSERT INTO role (title, salary) VALUES ("${newRole.role}", ${newRole.salary})`)
-      }).then(() => start());
-})
-    
-};
+      inq
+        .prompt([
+          {
+            type: "input",
+            message: "What is the name of the new role?",
+            name: "role",
+          },
+          {
+            type: "input",
+            message: "What is the salary of the new Role?",
+            name: "salary",
+          },
+          {
+            type: "list",
+            message: "Which department does the role belong to?",
+            name: "dep",
+            choices: depParams,
+          },
+        ])
+        .then((newRole) => {
+          console.log(newRole);
+          return db
+            .promise()
+            .query(
+              `INSERT INTO role (title, salary, department_id) VALUES ("${newRole.role}", ${newRole.salary}, ${newRole.dep})`
+            );
+        })
+        .then(() => start());
+    });
+}
 
 function addEmp() {
-    return db
+  return db
     .promise()
-    .query(`SELECT * FROM role`)
+    .query(`SELECT title, id FROM role`)
     .then(([rows, fields]) => {
       let roles = rows;
-      let roleParams = roles.map(({ id, title, department_id }) => ({
-        id: id,
-        title: title,
-        depId: department_id
-      })); console.log(roleParams)
-    
-    inq.prompt([
-        {
-          type: "input",
-          message: "What is the new employee's first name?",
-          name: "first"
-        },
-        {
-          type: "input",
-          message: "What is the new employee's last name?",
-          name: "last"
-        },
-        {
-            type: "list",
-            message: "What is the new employee's role?",
-            name: "role",
-            choices: roleParams.title
-        }
-        ]).then (newEmp => {
-            console.log(newEmp)
-        })
-})}
+      let roleParams = roles.map(({ title, id }) => ({
+        name: title,
+        value: id,
+      }));
+      return roleParams;
+    })
+    .then((rolesList) => {
+      return db
+        .promise()
+        .query(`SELECT id, first_name FROM employee`)
+        .then(([rows, fields]) => {
+          let emp = rows;
+          let empParams = emp.map(({ id, first_name }) => ({
+            name: first_name,
+            value: id,
+          }));
+
+          return inq.prompt([
+            {
+              type: "input",
+              message: "What is the new employee's first name?",
+              name: "first",
+            },
+            {
+              type: "input",
+              message: "What is the new employee's last name?",
+              name: "last",
+            },
+            {
+              type: "list",
+              message: "What is the new employee's role?",
+              name: "role",
+              choices: rolesList,
+            },
+            {
+              type: "list",
+              message: "Who is the new employee's manager?",
+              name: "manager",
+              choices: empParams,
+            },
+          ]);
+        });
+    }).then((newEmp) => {
+        console.log(newEmp)
+        
+        return db
+        .promise()
+        .query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) 
+        VALUES ("${newEmp.first}", "${newEmp.last}", ${newEmp.role}, ${newEmp.manager})`);
+    }).then(() => start());
+}
+
+
 
 // QUESTIONS
-// How can I get department ID on line 144
-// How can I get into role titles on line 177
 // How can I pull more information for addEmp (I need manager)
-// Show all employees showing managers are an ID
