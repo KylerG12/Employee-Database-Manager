@@ -11,7 +11,7 @@ VALUES
     ("General Manager", 100000, 1),
     ("Director of Sales", 80000, 1),
     ("Assistant General Manager", 80000, 1),
-    ("Operations Manager", 60000, 1),
+    ("Operations Manager", 70000, 1),
     ("Engineer", 40000, 2),
     ("Room Attendant", 40000, 3),
     ("Laundry Attendant", 40000, 3),

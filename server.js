@@ -98,7 +98,7 @@ function viewAllEmp() {
     LEFT JOIN role on employee.role_id = role.id 
     LEFT JOIN department on role.department_id = department.id
     LEFT JOIN employee e2 on employee.manager_id = e2.id
-    ORDER BY title;`
+    ORDER BY salary DESC, title;`
     )
     .then(([rows, fields]) => {
       console.table(rows);
@@ -132,7 +132,6 @@ function addRole() {
         value: id,
         name: name,
       }));
-      console.log(depParams);
 
       inq
         .prompt([
@@ -154,7 +153,6 @@ function addRole() {
           },
         ])
         .then((newRole) => {
-          console.log(newRole);
           return db
             .promise()
             .query(
@@ -215,7 +213,6 @@ function addEmp() {
         });
     })
     .then((newEmp) => {
-      console.log(newEmp);
 
       return db.promise()
         .query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) 
@@ -263,7 +260,6 @@ function updateRole() {
         });
     })
     .then((newRole) => {
-      console.log(newRole);
 
       return db.promise().query(`UPDATE employee
             SET role_id = ${newRole.role}
