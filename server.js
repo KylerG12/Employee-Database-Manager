@@ -56,7 +56,7 @@ function start() {
           addEmp();
           break;
         case "Update an Employee Role":
-          update();
+          updateRole();
           break;
         case "Quit":
           process.exit();
@@ -213,17 +213,61 @@ function addEmp() {
             },
           ]);
         });
-    }).then((newEmp) => {
-        console.log(newEmp)
-        
-        return db
-        .promise()
+    })
+    .then((newEmp) => {
+      console.log(newEmp);
+
+      return db.promise()
         .query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) 
         VALUES ("${newEmp.first}", "${newEmp.last}", ${newEmp.role}, ${newEmp.manager})`);
-    }).then(() => start());
+    })
+    .then(() => start());
 }
 
+function updateRole() {
+  return db
+    .promise()
+    .query(`SELECT title, id FROM role`)
+    .then(([rows, fields]) => {
+      let roles = rows;
+      let roleParams = roles.map(({ title, id }) => ({
+        name: title,
+        value: id,
+      }));
+      return roleParams;
+    })
+    .then((rolesList) => {
+      return db
+        .promise()
+        .query(`SELECT first_name FROM employee`)
+        .then(([rows, fields]) => {
+          let emp = rows;
+          let empParams = emp.map(({ first_name }) => ({
+            name: first_name,
+          }));
 
+          return inq.prompt([
+            {
+              type: "list",
+              message: "Which employee's role would you like to update?",
+              name: "emp",
+              choices: empParams,
+            },
+            {
+              type: "list",
+              message: "What is the employee's new role?",
+              name: "role",
+              choices: rolesList,
+            },
+          ]);
+        });
+    })
+    .then((newRole) => {
+      console.log(newRole);
 
-// QUESTIONS
-// How can I pull more information for addEmp (I need manager)
+      return db.promise().query(`UPDATE employee
+            SET role_id = ${newRole.role}
+            WHERE first_name = "${newRole.emp}"`);
+    })
+    .then(() => start());
+}
